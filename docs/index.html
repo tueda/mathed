@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathJaX TeX Editor</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            /* Change to column for vertical layout */
+            height: 100vh;
+            margin: 0;
+        }
+
+        .pane {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            overflow-y: auto;
+        }
+
+        #output-text {
+            white-space: pre-wrap;
+            background: #f9f9f9;
+        }
+
+        .embedded-mathjax {
+            white-space: nowrap;
+        }
+
+        #copy-message {
+            color: green;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+    <div class="pane">
+        <h3>Source Editor</h3>
+        <textarea id="editor" rows="10" style="width: 100%;"></textarea>
+    </div>
+    <div class="pane">
+        <h3>Source Display <button id="copy-button">Copy</button></h3>
+        <div id="output-text"></div>
+        <div id="copy-message">Copied!</div>
+    </div>
+    <div class="pane">
+        <h3>Math Display</h3>
+        <div id="output-mathjax"></div>
+    </div>
+
+    <script>
+        // Function to escape HTML special characters
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+                ' ': '&nbsp;'
+            };
+            return text.replace(/[&<>"' ]/g, function (m) { return map[m]; });
+        }
+
+        // Function to process text, converting math expressions and adding appropriate spaces for non-English text
+        function processText(inputText) {
+            const processedText = inputText.replace(/\$(.+?)\$/g, function (match, p1, offset, string) {
+                const before = string[offset - 1];
+                const after = string[offset + match.length];
+                let result = '<span class="embedded-mathjax">\\( ' + p1 + ' \\)</span>';
+
+                // Add &nbsp; only if the text is not English and not punctuation
+                if (/[^\x00-\x7F]/.test(inputText)) {
+                    if (before && !/[ ,.;:!?(){}[\]]/.test(before)) {
+                        result = '&nbsp;' + result;
+                    }
+                    if (after && !/[ ,.;:!?(){}[\]]/.test(after)) {
+                        result = result + '&nbsp;';
+                    }
+                }
+                return result;
+            });
+            return processedText;
+        }
+
+        // Event listener to update the displays when the input text changes
+        document.getElementById('editor').addEventListener('input', function () {
+            const inputText = this.value;
+            const processedText = processText(inputText);
+
+            // Display the processed text as escaped HTML in the source display area
+            document.getElementById('output-text').innerHTML = escapeHtml(processedText);
+
+            // Display the processed text with MathJax in the Math Display area
+            document.getElementById('output-mathjax').innerHTML = processedText;
+            MathJax.typesetPromise([document.getElementById('output-mathjax')]);
+        });
+
+        // Function to copy text to clipboard
+        function copyToClipboard() {
+            const outputText = document.getElementById('output-text').textContent;
+            navigator.clipboard.writeText(outputText).then(function () {
+                // Show the copy success message
+                const copyMessage = document.getElementById('copy-message');
+                copyMessage.style.display = 'inline';
+                clearTimeout(copyMessage.timeout);
+                copyMessage.timeout = setTimeout(() => {
+                    copyMessage.style.display = 'none';
+                }, 2000); // Hide the message after 2 seconds
+            }, function (err) {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        // Event listener for the copy button
+        document.getElementById('copy-button').addEventListener('click', copyToClipboard);
+    </script>
+</body>
+
+</html>
