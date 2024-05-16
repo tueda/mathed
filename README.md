@@ -7,7 +7,7 @@ Both entail a continuous struggle.
 While there is no ultimate solution for life,
 we offer a practical solution to ease the struggles within *the LMS*.
 
-The site provides an editor for writing text with LateX, which is then
+The site provides an editor for writing text with LaTeX, which is then
 translated into suitable HTML format for pasting into the LMS,
 along with a rendering preview of the math using MathJax.
 
