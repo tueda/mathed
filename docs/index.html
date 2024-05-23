@@ -100,40 +100,66 @@
                 "'": '&#039;',
                 ' ': '&nbsp;'
             };
-            return text.replace(/[&<>"' ]/g, function (m) { return map[m]; });
+            return text.replace(/[&<>"']/g, function (m) { return map[m]; }).replace(/ /g, '&nbsp;');
         }
 
-        // Function to process text, converting math expressions and adding appropriate spaces for non-English text
+        // Function to process text for Source Display
         function processText(inputText) {
             const processedText = inputText.replace(/\$(.+?)\$/g, function (match, p1, offset, string) {
                 const before = string[offset - 1];
                 const after = string[offset + match.length];
                 let result = '<span class="embedded-mathjax">\\( ' + p1 + ' \\)</span>';
 
-                // Add &nbsp; only if the text is not English and not punctuation
-                if (/[^\x00-\x7F]/.test(inputText)) {
-                    if (before && !/[ ,.;:!?(){}[\]]/.test(before)) {
-                        result = '&nbsp;' + result;
-                    }
-                    if (after && !/[ ,.;:!?(){}[\]]/.test(after)) {
-                        result = result + '&nbsp;';
-                    }
+                if (before && before !== ' ' && before !== '\n' && !/[.,;!?]/.test(before)) {
+                    result = '&nbsp;' + result;
                 }
+                if (after && after !== ' ' && after !== '\n' && !/[.,;!?]/.test(after) && after !== undefined) {
+                    result = result + '&nbsp;';
+                }
+
                 return result;
             });
+
             return processedText;
+        }
+
+        // Function to process text for Math Display
+        function processTextForMathDisplay(inputText) {
+            const paragraphs = inputText.split('\n\n');
+            const processedParagraphs = paragraphs.map(paragraph => {
+                const lines = paragraph.split('\n');
+                const processedLines = lines.map(line => {
+                    return line.replace(/\$(.+?)\$/g, function (match, p1, offset, string) {
+                        const before = string[offset - 1];
+                        const after = string[offset + match.length];
+                        let result = '\\(' + p1 + '\\)';
+
+                        if (before && before !== ' ' && before !== '\n' && !/[.,;!?]/.test(before)) {
+                            result = '&nbsp;' + result;
+                        }
+                        if (after && after !== ' ' && after !== '\n' && !/[.,;!?]/.test(after) && after !== undefined) {
+                            result = result + '&nbsp;';
+                        }
+
+                        return result;
+                    });
+                });
+                return '<p>' + processedLines.join(' ') + '</p>';
+            });
+            return processedParagraphs.join('');
         }
 
         // Event listener to update the displays when the input text changes
         document.getElementById('editor').addEventListener('input', function () {
             const inputText = this.value;
             const processedText = processText(inputText);
+            const mathDisplayText = processTextForMathDisplay(inputText);
 
             // Display the processed text as escaped HTML in the source display area
             document.getElementById('output-text').innerHTML = escapeHtml(processedText);
 
             // Display the processed text with MathJax in the Math Display area
-            document.getElementById('output-mathjax').innerHTML = processedText;
+            document.getElementById('output-mathjax').innerHTML = mathDisplayText;
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, "output-mathjax"]);
         });
 
