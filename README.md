@@ -21,4 +21,4 @@ in the HTML edit pane:
 | `\(` | `<span class="embedded-mathjax">\(` |
 | `\)` | `\)</span>` |
 
-Disclaimer: the code was written with GPT-4o.
+Disclaimer: This code was written with the assistance of AI.
