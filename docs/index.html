@@ -46,7 +46,8 @@
             white-space: nowrap;
         }
 
-        #copy-message {
+        #copy-source-message,
+        #copy-output-message {
             color: green;
             display: none;
             margin-top: 10px;
@@ -73,13 +74,14 @@
         <i class="fab fa-github"></i>
     </a>
     <div class="pane">
-        <h3>Source Editor</h3>
+        <h3>Source Editor <button id="copy-source-button">Copy</button></h3>
         <textarea id="editor"></textarea>
+        <div id="copy-source-message">Copied!</div>
     </div>
     <div class="pane">
-        <h3>Source Display <button id="copy-button">Copy</button></h3>
+        <h3>Source Display <button id="copy-output-button">Copy</button></h3>
         <textarea id="output-text"></textarea>
-        <div id="copy-message">Copied!</div>
+        <div id="copy-output-message">Copied!</div>
     </div>
     <div class="pane">
         <h3>Math Display</h3>
@@ -218,24 +220,41 @@
             isUpdating = false;
         });
 
-        // Function to copy text to clipboard (processed HTML)
-        function copyToClipboard() {
-            const outputText = document.getElementById('output-text').value;
-            navigator.clipboard.writeText(outputText).then(function () {
+        // Function to copy source text to clipboard
+        function copySourceToClipboard() {
+            const editorText = document.getElementById('editor').value;
+            navigator.clipboard.writeText(editorText).then(function () {
                 // Show the copy success message
-                const copyMessage = document.getElementById('copy-message');
-                copyMessage.style.display = 'inline';
-                clearTimeout(copyMessage.timeout);
-                copyMessage.timeout = setTimeout(() => {
-                    copyMessage.style.display = 'none';
-                }, 2000); // Hide the message after 2 seconds
+                const msg = document.getElementById('copy-source-message');
+                msg.style.display = 'inline';
+                clearTimeout(msg.timeout);
+                msg.timeout = setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
             }, function (err) {
-                console.error('Failed to copy: ', err);
+                console.error('Failed to copy source text: ', err);
             });
         }
 
-        // Event listener for the copy button
-        document.getElementById('copy-button').addEventListener('click', copyToClipboard);
+        // Function to copy output text to clipboard
+        function copyOutputToClipboard() {
+            const outputText = document.getElementById('output-text').value;
+            navigator.clipboard.writeText(outputText).then(function () {
+                // Show the copy success message
+                const msg = document.getElementById('copy-output-message');
+                msg.style.display = 'inline';
+                clearTimeout(msg.timeout);
+                msg.timeout = setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000); // Hide the message after 2 seconds
+            }, function (err) {
+                console.error('Failed to copy output text: ', err);
+            });
+        }
+
+        // Event listeners for copy buttons
+        document.getElementById('copy-source-button').addEventListener('click', copySourceToClipboard);
+        document.getElementById('copy-output-button').addEventListener('click', copyOutputToClipboard);
     </script>
 </body>
 
