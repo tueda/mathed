@@ -36,13 +36,10 @@
             /* Allow scrolling if necessary */
         }
 
+        /* textarea for Source Display */
         #output-text {
-            white-space: pre-wrap;
             background: #f9f9f9;
-            flex: 1;
-            /* Ensure it grows to fill the space */
             overflow-y: auto;
-            /* Allow vertical scrolling */
         }
 
         .embedded-mathjax {
@@ -81,7 +78,7 @@
     </div>
     <div class="pane">
         <h3>Source Display <button id="copy-button">Copy</button></h3>
-        <div id="output-text"></div>
+        <textarea id="output-text"></textarea>
         <div id="copy-message">Copied!</div>
     </div>
     <div class="pane">
@@ -90,7 +87,10 @@
     </div>
 
     <script>
-        // Function to escape HTML special characters
+        // Flag to prevent infinite loop during bidirectional synchronisation
+        let isUpdating = false;
+
+        // Function to escape HTML special characters (used for reverse conversion)
         function escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -103,7 +103,21 @@
             return text.replace(/[&<>"']/g, function (m) { return map[m]; }).replace(/ /g, '&nbsp;');
         }
 
-        // Function to process text for Source Display
+        // Function to unescape HTML entities
+        function unescapeHtml(text) {
+            const map = {
+                '&amp;': '&',
+                '&lt;': '<',
+                '&gt;': '>',
+                '&quot;': '"',
+                '&#039;': "'",
+                '&nbsp;': ' '
+            };
+            return text.replace(/(&amp;|&lt;|&gt;|&quot;|&#039;|&nbsp;)/g,
+                function (m) { return map[m]; });
+        }
+
+        // Function to process text, converting math expressions and adding appropriate spaces for non-English text
         function processText(inputText) {
             const processedText = inputText.replace(/\$(.+?)\$/g, function (match, p1, offset, string) {
                 const before = string[offset - 1];
@@ -121,6 +135,24 @@
             });
 
             return processedText;
+        }
+
+        // Reverse conversion: HTML → raw text with $...$
+        function reverseProcessText(htmlText) {
+            // Replace MathJax span back to $...$
+            let raw = htmlText.replace(
+                /<span class="embedded-mathjax">\\\( ?(.+?) ?\\\)<\/span>/g,
+                function (match, p1) {
+                    return '$' + p1.trim() + '$';
+                }
+            );
+            // Unescape HTML entities (&nbsp; → space etc.)
+            raw = unescapeHtml(raw);
+            // remove any lingering non-breaking spaces
+            raw = raw.replace(/\u00A0/g, ' ');
+            // remove spaces added around inline math
+            raw = raw.replace(/\s*\$(.+?)\$\s*/g, '$$$1$$');
+            return raw;
         }
 
         // Function to process text for Math Display
@@ -150,22 +182,45 @@
         }
 
         // Event listener to update the displays when the input text changes
+        // Source Editor -> Source Display
         document.getElementById('editor').addEventListener('input', function () {
+            if (isUpdating) return;
+            isUpdating = true;
+
             const inputText = this.value;
             const processedText = processText(inputText);
             const mathDisplayText = processTextForMathDisplay(inputText);
 
-            // Display the processed text as escaped HTML in the source display area
-            document.getElementById('output-text').innerHTML = escapeHtml(processedText);
+            // Put processed HTML into Source Display textarea
+            document.getElementById('output-text').value = processedText;
 
             // Display the processed text with MathJax in the Math Display area
             document.getElementById('output-mathjax').innerHTML = mathDisplayText;
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, "output-mathjax"]);
+
+            isUpdating = false;
         });
 
-        // Function to copy text to clipboard
+        // Source Display -> Source Editor
+        document.getElementById('output-text').addEventListener('input', function () {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            const displayText = this.value;
+            const rawText = reverseProcessText(displayText);
+
+            document.getElementById('editor').value = rawText;
+
+            // Render MathJax with current display text
+            document.getElementById('output-mathjax').innerHTML = displayText;
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "output-mathjax"]);
+
+            isUpdating = false;
+        });
+
+        // Function to copy text to clipboard (processed HTML)
         function copyToClipboard() {
-            const outputText = document.getElementById('output-text').textContent;
+            const outputText = document.getElementById('output-text').value;
             navigator.clipboard.writeText(outputText).then(function () {
                 // Show the copy success message
                 const copyMessage = document.getElementById('copy-message');
