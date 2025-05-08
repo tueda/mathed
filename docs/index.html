@@ -218,7 +218,18 @@ environments that require specially formatted math expressions.
             if (isUpdating) return;
             isUpdating = true;
 
-            const displayText = this.value;
+            let displayText = this.value;
+
+            // Canonicalize U+00A0 in the span tag
+            const replaced = displayText.replace(
+                /<span\u00A0class="embedded-mathjax">/g,
+                '<span class="embedded-mathjax">'
+            );
+            if (replaced !== displayText) {
+                // Note that this assignment will not trigger another input event
+                this.value = displayText = replaced;
+            }
+
             const rawText = reverseProcessText(displayText);
 
             document.getElementById('editor').value = rawText;
