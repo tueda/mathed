@@ -243,7 +243,8 @@ environments that require specially formatted math expressions.
 
         // Function to copy source text to clipboard
         function copySourceToClipboard() {
-            const editorText = document.getElementById('editor').value;
+            const editorText = document.getElementById('editor').value
+                .replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, '');  // trim
             navigator.clipboard.writeText(editorText).then(function () {
                 // Show the copy success message
                 const msg = document.getElementById('copy-source-message');
@@ -259,7 +260,8 @@ environments that require specially formatted math expressions.
 
         // Function to copy output text to clipboard
         function copyOutputToClipboard() {
-            const outputText = document.getElementById('output-text').value;
+            const outputText = document.getElementById('output-text').value
+                .replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, '');  // trim
             navigator.clipboard.writeText(outputText).then(function () {
                 // Show the copy success message
                 const msg = document.getElementById('copy-output-message');
